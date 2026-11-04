@@ -156,26 +156,29 @@ def index():
                 apps.append({'name': folder_name, 'slug': folder_name})
     return render_template_string(HOME_TEMPLATE, apps=apps)
 
-@app.route('/upload', methods=['POST'])
-def upload_file():
-    if 'app_file' not in request.files:
+@app.route('/upload', methods=['GET', 'POST'])
+def upload():
+    # 1. Kullanıcı tarayıcıdan /upload adresine doğrudan (GET) girdiyse ana sayfaya at
+    if request.method == 'GET':
         return redirect(url_for('index'))
-    file = request.files['app_file']
-    if file.filename == '':
-        return redirect(url_for('index'))
+
+    # 2. POST İŞLEMLERİ (Dosya Yükleme)
+    file = request.files.get('file')
     
-    if file:
+    if file and file.filename != '':
         filename = secure_filename(file.filename)
         app_name = os.path.splitext(filename)[0]
-        
+
         # Her uygulama için özel klasör açıyoruz
         app_dir = os.path.join(UPLOAD_FOLDER, app_name)
         os.makedirs(app_dir, exist_ok=True)
-        
-        # Dosyayı her zaman index.html olarak kaydediyoruz ki doğrudan sunulsun
+
+        # Dosyayı her zaman index.html olarak kaydediyoruz
         file.save(os.path.join(app_dir, 'index.html'))
-        
+
+    # 3. Yükleme tamamlandıktan sonra KESİNLİKLE ana sayfaya yönlendir (Çökmeden kurtaran kısım)
     return redirect(url_for('index'))
+
 
 @app.route('/app/<app_slug>/', defaults={'path': ''})
 @app.route('/app/<app_slug>/<path:path>')
